@@ -20,8 +20,6 @@ A comprehensive web-based application for predicting company credit scores using
 - [Machine Learning Model](#machine-learning-model)
 - [Explainable AI (SHAP)](#explainable-ai-shap)
 - [Architecture](#architecture)
-- [Configuration](#configuration)
-- [Troubleshooting](#troubleshooting)
 - [Citation](#citation)
 - [License](#license)
 
@@ -30,6 +28,8 @@ A comprehensive web-based application for predicting company credit scores using
 ## Abstract
 
 This project implements an **Explainable AI (XAI)-driven credit score prediction system** that leverages machine learning algorithms to assess company creditworthiness. The system predicts credit scores ranging from 300 to 900 and categorizes companies into risk levels (High, Medium, or Low Risk). A key innovation of this system is the integration of SHAP (SHapley Additive exPlanations) values, providing transparent and interpretable explanations for each prediction, making it suitable for regulatory compliance and stakeholder trust.
+
+**Key Workflow**: The system processes financial documents in PDF format (GST filings, financial statements, etc.) uploaded by users. Advanced text extraction algorithms automatically parse and extract financial metrics from these documents, which are then used to generate credit score predictions. PDFs are stored in the `src/uploads/` folder for processing.
 
 ### Key Capabilities
 
@@ -377,7 +377,19 @@ To verify the installation is successful:
 1. Check that the server starts without errors
 2. Access the homepage at `http://localhost:5000`
 3. Try registering a new user account
-4. Make a test prediction
+4. Upload a test PDF document with financial data
+5. Verify that data extraction and prediction work correctly
+
+### PDF Document Requirements
+
+For predictions to work correctly, ensure PDF documents contain the following information:
+
+- **Financial Statements**: Monthly inflow/outflow, asset values
+- **GST Filings**: GST compliance scores
+- **Business Information**: Company name, business age, business size, employee count
+- **Transaction Records**: Invoice details, supplier payments, e-commerce sales
+
+The system will attempt to extract all 11 required features from the PDF. If some fields cannot be extracted, you may need to manually verify or correct them in the auto-filled form.
 
 ---
 
@@ -405,26 +417,37 @@ To verify the installation is successful:
 
 #### 3. Make a Credit Score Prediction
 
+**Important**: The system uses **PDF document upload** for predictions. Manual form entry is not the primary method.
+
 1. Click **"Predict Credit Score"** from the dashboard
-2. Fill in all 11 financial features:
-   - Monthly Inflow
-   - Monthly Outflow
-   - GST Compliance Score
-   - E-commerce Sales
-   - Supplier Payments
-   - Invoice Issued (count)
-   - Invoice Amount
-   - Employee Count
-   - Asset Value
-   - Business Age (years)
-   - Business Size (dropdown)
-3. Click **"Predict"** to submit
-4. View results with:
-   - Credit score on animated speedometer
-   - Risk category badge
-   - SHAP visualizations (waterfall and force plots)
+2. **Upload PDF Document**:
+   - Click **"Upload and Extract"** button
+   - Select a PDF file containing company financial data (GST filings, financial statements, etc.)
+   - The PDF should contain the following financial metrics:
+     - Monthly Inflow
+     - Monthly Outflow
+     - GST Compliance Score
+     - E-commerce Sales
+     - Supplier Payments
+     - Invoice Issued (count)
+     - Invoice Amount
+     - Employee Count
+     - Asset Value
+     - Business Age (years)
+     - Business Size (Small/Medium/Large)
+   - The system will automatically extract data from the PDF using advanced text extraction algorithms
+3. **Review Extracted Data**: 
+   - The form fields will be auto-filled with extracted values
+   - Verify and correct any extraction errors if needed
+4. **Run Prediction**: Click **"Predict"** to generate credit score
+5. **View Results**:
+   - Credit score displayed on animated speedometer
+   - Risk category badge (High/Medium/Low)
+   - SHAP visualizations (waterfall and force plots) showing feature contributions
    - Feature importance explanations
    - Downloadable PDF report
+
+**Note**: PDFs are stored in the `src/uploads/` folder after upload. The system processes PDFs from this directory for predictions.
 
 #### 4. View Prediction History
 
@@ -461,6 +484,65 @@ To verify the installation is successful:
 - Access individual company prediction histories
 - Monitor company activity
 
+---
+
+## Machine Learning Model
+
+### Model Architecture
+
+The application uses an **ensemble machine learning model** combining **Random Forest (RF)** and **XGBoost** algorithms trained on company financial data extracted from PDF documents. The ensemble approach improves prediction accuracy and robustness. The models are serialized using `joblib` and loaded at application startup.
+
+### Model Files
+
+- **`src/ml_models/best_cibil_model1.pkl`**: The trained ensemble credit score prediction model
+- **`src/ml_models/encoder1.pkl`**: Label encoder for the categorical feature `Business_size`
+
+### Input Features (11 Features)
+
+The model accepts the following financial inputs, which are **automatically extracted from uploaded PDF documents**:
+
+| Feature | Type | Description | Range/Values | Source in PDF |
+|---------|------|-------------|--------------|---------------|
+| **Monthly_Inflow** | Float | Monthly cash inflow in currency units | ≥ 0 | Financial statements, bank statements |
+| **Monthly_Outflow** | Float | Monthly cash outflow in currency units | ≥ 0 | Financial statements, bank statements |
+| **Gst_compliance_score** | Float | GST compliance rating | 0-100 | GST filings, compliance reports |
+| **Ecommerce_sales** | Float | E-commerce sales revenue | ≥ 0 | Sales reports, income statements |
+| **Supplier_payments** | Float | Payments made to suppliers | ≥ 0 | Accounts payable, payment records |
+| **Invoice_issued** | Integer | Number of invoices issued | ≥ 0 | Invoice records, billing statements |
+| **Invoice_amount** | Float | Total invoice amount | ≥ 0 | Invoice records, revenue reports |
+| **Employee_count** | Integer | Number of employees | ≥ 0 | HR records, payroll documents |
+| **Asset_value** | Float | Total asset value | ≥ 0 | Balance sheets, asset registers |
+| **Business_age** | Float | Age of the business in years | ≥ 0 | Company registration, incorporation date |
+| **Business_size** | Categorical | Business size category | Small/Medium/Large | Company profile, registration documents |
+
+**Data Extraction Process**: The system uses `pdfplumber` and `PyMuPDF` libraries to extract text from PDF documents, then applies pattern matching and natural language processing to identify and extract these financial metrics automatically.
+
+### Output
+
+- **Credit Score**: Integer value ranging from **300 to 900**
+- **Risk Category**: 
+  - **High Risk**: Score ≤ 600
+  - **Medium Risk**: 601 ≤ Score ≤ 750
+  - **Low Risk**: Score > 750
+
+### Model Loading
+
+The ensemble model (Random Forest + XGBoost) and encoder are loaded once at application startup from the `src/ml_models/` directory. If loading fails, the application logs an error but continues to run (predictions will be unavailable).
+
+### PDF Processing Workflow
+
+1. **PDF Upload**: Users upload financial documents in PDF format via the web interface
+2. **Text Extraction**: The system uses `pdfplumber` (primary) and `PyMuPDF` (fallback) to extract text content
+3. **Data Parsing**: Advanced regex patterns and NLP techniques identify financial metrics from unstructured text
+4. **Data Normalization**: Extracted values are cleaned (remove currency symbols, commas) and converted to appropriate data types
+5. **Feature Extraction**: The 11 required features are extracted and validated
+6. **Auto-fill Form**: Extracted data automatically populates the prediction form for user verification
+7. **Prediction**: Once verified, the data is fed to the ensemble model for credit score prediction
+
+**Important Note**: PDFs are stored in the `src/uploads/` folder after upload. The system processes PDFs from this directory for predictions. Manual form entry is available for verification/correction but the primary workflow relies on PDF document processing.
+
+---
+
 ## Explainable AI (SHAP)
 
 ### What is SHAP?
@@ -494,48 +576,29 @@ The application uses **SHAP TreeExplainer** (optimized for tree-based models) to
 
 ### System Architecture Diagram
 
-```
-┌─────────────────┐
-│   Web Browser   │
-│   (Frontend)    │
-└────────┬────────┘
-         │ HTTP/HTTPS
-         │
-┌────────▼────────────────────────┐
-│      Flask Application          │
-│  ┌──────────────────────────┐  │
-│  │   Route Handlers          │  │
-│  │   - Authentication        │  │
-│  │   - Prediction            │  │
-│  │   - Admin Panel          │  │
-│  └──────────┬───────────────┘  │
-│             │                   │
-│  ┌──────────▼───────────────┐  │
-│  │   Business Logic Layer    │  │
-│  │   - Data Preprocessing    │  │
-│  │   - Model Inference       │  │
-│  │   - SHAP Explanation      │  │
-│  └──────────┬───────────────┘  │
-└─────────────┼───────────────────┘
-              │
-    ┌─────────┼─────────┐
-    │         │         │
-┌───▼───┐ ┌──▼───┐ ┌───▼────┐
-│ SQLite│ │ ML   │ │ SHAP   │
-│  DB   │ │Model │ │Engine  │
-└───────┘ └──────┘ └────────┘
-```
+![System Architecture](results/Architecture-Diag.png)
+
+*Figure 1: High-level system architecture showing the complete data flow from MSME data ingestion through prediction, explainability, and reporting.*
+
+The architecture consists of four main functional blocks:
+
+1. **INGESTION & PREPROCESSING**: Handles PDF document uploads, data extraction, and feature preparation
+2. **PREDICTION & EXPLAINABILITY**: Ensemble ML models (Random Forest + XGBoost) generate predictions with SHAP-based explanations
+3. **DECISION & REPORTING**: Risk classification and dashboard/report generation
+4. **DATA & MODEL MANAGEMENT**: Model registry and system monitoring
 
 ### Data Flow
 
-1. **User Input**: Financial data submitted via web form
-2. **Preprocessing**: Data converted to pandas DataFrame, categorical encoding applied
-3. **Model Inference**: ML model generates credit score prediction
-4. **Risk Classification**: Score categorized into risk level
-5. **SHAP Explanation**: Feature contributions calculated
-6. **Database Storage**: Prediction saved with metadata
-7. **Visualization**: SHAP plots generated and stored
-8. **Response**: Results rendered to user with visualizations
+1. **PDF Upload**: User uploads financial documents (PDF format) containing company financial data
+2. **Data Extraction**: PDF text extraction using `pdfplumber` and `PyMuPDF` to parse financial metrics
+3. **Data Preprocessing**: Extracted data is normalized, validated, and converted to pandas DataFrame format
+4. **Feature Encoding**: Categorical features (e.g., Business_size) are encoded using the trained label encoder
+5. **Model Inference**: Ensemble model (Random Forest + XGBoost) generates credit score prediction (300-900 range)
+6. **Risk Classification**: Score is automatically categorized into High/Medium/Low risk levels
+7. **SHAP Explanation**: SHAP TreeExplainer calculates feature contributions for model interpretability
+8. **Database Storage**: Prediction results, input features, and metadata are saved to SQLite database
+9. **Visualization Generation**: SHAP waterfall and force plots are generated and stored
+10. **Response Rendering**: Results displayed to user with interactive visualizations and downloadable reports
 
 ### Technology Stack Layers
 
