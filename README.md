@@ -525,6 +525,10 @@ The model accepts the following financial inputs, which are **automatically extr
   - **Medium Risk**: 601 ≤ Score ≤ 750
   - **Low Risk**: Score > 750
 
+![Credit Score Prediction Result](results/prediction.png)
+
+*Figure 2: Example credit score prediction result dashboard showing the speedometer visualization (score: 799), risk category classification (Low Risk), and downloadable report option.*
+
 ### Model Loading
 
 The ensemble model (Random Forest + XGBoost) and encoder are loaded once at application startup from the `src/ml_models/` directory. If loading fails, the application logs an error but continues to run (predictions will be unavailable).
