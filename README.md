@@ -20,7 +20,6 @@ A comprehensive web-based application for predicting company credit scores using
 - [Machine Learning Model](#machine-learning-model)
 - [Explainable AI (SHAP)](#explainable-ai-shap)
 - [Architecture](#architecture)
-- [Citation](#citation)
 - [License](#license)
 
 ---
@@ -616,7 +615,6 @@ The architecture consists of four main functional blocks:
 ---
 
 
----
 
 ## License
 
