@@ -615,19 +615,6 @@ The architecture consists of four main functional blocks:
 
 ---
 
-## Citation
-
-If you use this project in your research, please cite it as:
-
-```bibtex
-@software{xai_credit_predictor,
-  title = {XAI-Driven Credit Score Predictor},
-  author = {[Your Name]},
-  year = {2024},
-  url = {https://github.com/[username]/XAI-Driven-Credit-Score-Predictor},
-  version = {1.0.0}
-}
-```
 
 ---
 
