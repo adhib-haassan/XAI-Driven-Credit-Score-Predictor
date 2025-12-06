@@ -1,0 +1,209 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-12">
+        <h2 class="text-white">Admin Dashboard</h2>
+        <p class="text-white">Overview of the system statistics and analytics.</p>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-3">
+        <div class="card bg-dark text-white">
+            <div class="card-body text-center">
+                <h3>{{ total_companies }}</h3>
+                <p>Registered Companies</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-dark text-white">
+            <div class="card-body text-center">
+                <h3>{{ total_predictions }}</h3>
+                <p>Total Predictions</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-dark text-white">
+            <div class="card-body text-center">
+                <h3>{{ high_risk_companies }}</h3>
+                <p>High Risk Companies</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-dark text-white">
+            <div class="card-body text-center">
+                <h3>{{ low_risk_companies }}</h3>
+                <p>Low Risk Companies</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mt-4">
+    <div class="col-md-6">
+        <div class="card bg-dark text-white">
+            <div class="card-header">
+                <h4>Company Type Distribution</h4>
+            </div>
+            <div class="card-body">
+                <canvas id="companyTypeChart" width="400" height="200"></canvas>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card bg-dark text-white">
+            <div class="card-header">
+                <h4>Country Distribution</h4>
+            </div>
+            <div class="card-body">
+                <canvas id="countryChart" width="400" height="200"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mt-4">
+    <div class="col-md-12">
+        <div class="card bg-dark text-white">
+            <div class="card-header">
+                <h4>Risk Category Distribution</h4>
+            </div>
+            <div class="card-body">
+                <canvas id="riskCategoryChart" width="400" height="200"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mt-4">
+    <div class="col-md-12 text-center">
+        <a href="{{ url_for('admin_companies') }}" class="btn btn-primary">View All Companies</a>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Company Type Chart
+        const companyTypeCtx = document.getElementById('companyTypeChart').getContext('2d');
+        const companyTypeChart = new Chart(companyTypeCtx, {
+            type: 'pie',
+            data: {
+                labels: {{ company_types|map('first')|list|tojson }},
+                datasets: [{
+                    data: {{ company_types|map('last')|list|tojson }},
+                    backgroundColor: [
+                        'rgba(255, 99, 132, 0.7)',
+                        'rgba(54, 162, 235, 0.7)',
+                        'rgba(255, 206, 86, 0.7)'
+                    ],
+                    borderColor: [
+                        'rgba(255, 99, 132, 1)',
+                        'rgba(54, 162, 235, 1)',
+                        'rgba(255, 206, 86, 1)'
+                    ],
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'right',
+                        labels: {
+                            color: 'rgba(255, 255, 255, 0.7)'
+                        }
+                    }
+                }
+            }
+        });
+        
+        // Country Chart
+        const countryCtx = document.getElementById('countryChart').getContext('2d');
+        const countryChart = new Chart(countryCtx, {
+            type: 'bar',
+            data: {
+                labels: {{ countries|map('first')|list|tojson }},
+                datasets: [{
+                    label: 'Number of Companies',
+                    data: {{ countries|map('last')|list|tojson }},
+                    backgroundColor: 'rgba(54, 162, 235, 0.7)',
+                    borderColor: 'rgba(54, 162, 235, 1)',
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        grid: {
+                            color: 'rgba(255, 255, 255, 0.1)'
+                        },
+                        ticks: {
+                            color: 'rgba(255, 255, 255, 0.7)'
+                        }
+                    },
+                    x: {
+                        grid: {
+                            color: 'rgba(255, 255, 255, 0.1)'
+                        },
+                        ticks: {
+                            color: 'rgba(255, 255, 255, 0.7)'
+                        }
+                    }
+                },
+                plugins: {
+                    legend: {
+                        labels: {
+                            color: 'rgba(255, 255, 255, 0.7)'
+                        }
+                    }
+                }
+            }
+        });
+        
+        // Risk Category Chart
+        const riskCtx = document.getElementById('riskCategoryChart').getContext('2d');
+        const riskChart = new Chart(riskCtx, {
+            type: 'doughnut',
+            data: {
+                labels: {{ risk_categories|map('first')|list|tojson }},
+                datasets: [{
+                    data: {{ risk_categories|map('last')|list|tojson }},
+                    backgroundColor: [
+                        'rgba(255, 99, 132, 0.7)',
+                        'rgba(255, 206, 86, 0.7)',
+                        'rgba(75, 192, 192, 0.7)'
+                    ],
+                    borderColor: [
+                        'rgba(255, 99, 132, 1)',
+                        'rgba(255, 206, 86, 1)',
+                        'rgba(75, 192, 192, 1)'
+                    ],
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'right',
+                        labels: {
+                            color: 'rgba(255, 255, 255, 0.7)'
+                        }
+                    }
+                }
+            }
+        });
+    });
+</script>
+{% endblock %}

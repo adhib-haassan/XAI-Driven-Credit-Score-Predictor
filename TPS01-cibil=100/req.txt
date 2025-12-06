@@ -1,0 +1,10 @@
+pandas
+joblib
+flask
+flask_login
+flask_sqlalchemy
+scikit-learn
+shap
+matplotlib
+pdfplumber
+PyMuPDF

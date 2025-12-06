@@ -1,0 +1,236 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-12">
+        <h2 class="text-white">Credit Score Analytics</h2>
+        <p class="text-white">Track your company's credit score over time.</p>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-12">
+        <div class="card bg-dark text-white">
+            <div class="card-body">
+                <canvas id="creditScoreChart" width="400" height="200"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mt-4">
+    <div class="col-md-6">
+        <div class="card bg-dark text-white">
+            <div class="card-header">
+                <h4>Credit Score Statistics</h4>
+            </div>
+            <div class="card-body">
+                {% if scores %}
+                <p><strong>Highest Score:</strong> {{ highest_score }}</p>
+                <p><strong>Lowest Score:</strong> {{ lowest_score }}</p>
+                <p><strong>Average Score:</strong> {{ "%.1f"|format(average_score) }}</p>
+                <p><strong>Latest Score:</strong> {{ latest_score }}</p>
+                {% else %}
+                <p>No data available. Make a prediction to see analytics.</p>
+                <a href="{{ url_for('predict') }}" class="btn btn-primary">Make a Prediction</a>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card bg-dark text-white">
+            <div class="card-header">
+                <h4>Risk Category Distribution</h4>
+            </div>
+            <div class="card-body">
+                {% if scores %}
+                <canvas id="riskCategoryChart" width="400" height="200"></canvas>
+                {% else %}
+                <p>No data available. Make a prediction to see analytics.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Analysis Section -->
+
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-zoom@2.0.1/dist/chartjs-plugin-zoom.min.js"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        // Credit Score Trend Chart
+        const scoreCtx = document.getElementById('creditScoreChart').getContext('2d');
+        const dates = {{ dates| tojson
+    }};
+    const scores = {{ scores| tojson }};
+
+    const scoreChart = new Chart(scoreCtx, {
+        type: 'line',
+        data: {
+            labels: dates,
+            datasets: [{
+                label: 'Credit Score',
+                data: scores,
+                backgroundColor: 'rgba(54, 162, 235, 0.2)',
+                borderColor: 'rgba(54, 162, 235, 1)',
+                borderWidth: 2,
+                tension: 0.3,
+                fill: true
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                y: {
+                    beginAtZero: false,
+                    min: 300,
+                    max: 900,
+                    grid: {
+                        color: 'rgba(255, 255, 255, 0.1)'
+                    },
+                    ticks: {
+                        color: '#ffffff',
+                        font: {
+                            size: 11
+                        }
+                    }
+                },
+                x: {
+                    grid: {
+                        color: 'rgba(255, 255, 255, 0.1)'
+                    },
+                    ticks: {
+                        color: '#ffffff',
+                        font: {
+                            size: 11
+                        }
+                    }
+                }
+            },
+            plugins: {
+                title: {
+                    display: true,
+                    text: 'Credit Score Trend Over Time',
+                    color: '#ffffff',
+                    font: {
+                        size: 16,
+                        weight: 'bold'
+                    }
+                },
+                legend: {
+                    labels: {
+                        color: '#ffffff',
+                        font: {
+                            size: 12
+                        }
+                    }
+                },
+                tooltip: {
+                    mode: 'index',
+                    intersect: false,
+                    backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                    titleColor: '#ffffff',
+                    bodyColor: '#ffffff',
+                    borderColor: 'rgba(0, 255, 255, 0.5)',
+                    borderWidth: 1
+                },
+                zoom: {
+                    zoom: {
+                        wheel: {
+                            enabled: true,
+                        },
+                        pinch: {
+                            enabled: true
+                        },
+                        mode: 'x',
+                    },
+                    pan: {
+                        enabled: true,
+                        mode: 'x',
+                    }
+                }
+            }
+        }
+    });
+
+    // Risk Category Distribution Chart
+    const riskCtx = document.getElementById('riskCategoryChart');
+
+    // Only create the chart if there are scores
+    if (riskCtx && scores.length > 0) {
+        const riskCtxInstance = riskCtx.getContext('2d');
+
+        // Count risk categories
+        let highRisk = 0;
+        let mediumRisk = 0;
+        let lowRisk = 0;
+
+        scores.forEach(score => {
+            if (score <= 600) {
+                highRisk++;
+            } else if (score <= 750) {
+                mediumRisk++;
+            } else {
+                lowRisk++;
+            }
+        });
+
+        const riskChart = new Chart(riskCtxInstance, {
+            type: 'doughnut',
+            data: {
+                labels: ['High Risk', 'Medium Risk', 'Low Risk'],
+                datasets: [{
+                    data: [highRisk, mediumRisk, lowRisk],
+                    backgroundColor: [
+                        'rgba(255, 99, 132, 0.7)',
+                        'rgba(255, 206, 86, 0.7)',
+                        'rgba(75, 192, 192, 0.7)'
+                    ],
+                    borderColor: [
+                        'rgba(255, 99, 132, 1)',
+                        'rgba(255, 206, 86, 1)',
+                        'rgba(75, 192, 192, 1)'
+                    ],
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    title: {
+                        display: true,
+                        text: 'Risk Category Distribution',
+                        color: '#ffffff',
+                        font: {
+                            size: 16,
+                            weight: 'bold'
+                        }
+                    },
+                    legend: {
+                        position: 'right',
+                        labels: {
+                            color: '#ffffff',
+                            font: {
+                                size: 12
+                            }
+                        }
+                    },
+                    tooltip: {
+                        backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                        titleColor: '#ffffff',
+                        bodyColor: '#ffffff',
+                        borderColor: 'rgba(0, 255, 255, 0.5)',
+                        borderWidth: 1
+                    }
+                }
+            }
+        });
+    }
+    });
+</script>
+{% endblock %}

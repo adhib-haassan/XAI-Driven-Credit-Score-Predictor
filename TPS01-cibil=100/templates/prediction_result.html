@@ -1,0 +1,625 @@
+{% extends "base.html" %}
+
+{% block head %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/speedometer.css') }}">
+<style>
+    .result-container {
+        animation: fadeInUp 0.8s ease-out;
+    }
+    
+    @keyframes fadeInUp {
+        from { opacity: 0; transform: translateY(30px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+    
+    .score-glow { animation: scoreGlow 2s ease-in-out infinite; }
+    
+    @keyframes scoreGlow {
+        0%, 100% { text-shadow: 0 0 5px var(--neon-cyan); }
+        50% { text-shadow: 0 0 8px var(--neon-cyan); }
+    }
+    
+    .feature-card {
+        background: rgba(26, 26, 46, 0.6);
+        border: 2px solid rgba(0, 255, 255, 0.3);
+        border-radius: 15px;
+        padding: 20px;
+        margin-bottom: 15px;
+        transition: all 0.3s ease;
+    }
+    
+    .feature-card:hover {
+        border-color: var(--neon-cyan);
+        box-shadow: 0 0 20px rgba(0, 255, 255, 0.3);
+        transform: translateY(-5px);
+    }
+    
+    .feature-label { color: var(--neon-cyan); font-weight: 600; font-size: 0.9rem; margin-bottom: 5px; }
+    .feature-value { color: var(--text-primary); font-size: 1.2rem; font-weight: 700; }
+    
+    .explanation-card {
+        background: rgba(26, 26, 46, 0.8);
+        border-left: 4px solid var(--neon-cyan);
+        border-radius: 10px;
+        padding: 20px;
+        margin-bottom: 20px;
+    }
+    
+    .explanation-card h5 { color: var(--neon-cyan); font-family: 'Orbitron', sans-serif; margin-bottom: 15px; }
+    .explanation-card p { color: var(--text-secondary); line-height: 1.8; }
+
+    /* NEW SHAP SECTION STYLING */
+    .shap-card {
+        background: rgba(26, 26, 46, 0.7);
+        border: 2px solid rgba(0, 255, 255, 0.3);
+        border-radius: 15px;
+        padding: 20px;
+        margin-top: 25px;
+    }
+
+    .shap-card h4 {
+        color: var(--neon-cyan);
+        font-family: 'Orbitron', sans-serif;
+    }
+
+    .shap-image {
+        max-width: 100%;
+        height: auto;
+        border: 1px solid rgba(0,255,255,0.4);
+        border-radius: 10px;
+        margin-top: 10px;
+    }
+
+    .shap-iframe {
+        width: 100%;
+        height: 450px;
+        border: none;
+        margin-top: 15px;
+        border-radius: 10px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="result-container">
+    <div class="row">
+        <div class="col-md-12">
+            <div class="jumbotron">
+                <h1 class="display-4">Credit Score Prediction Result</h1>
+                {% if is_admin %}
+                    <p class="lead">Viewing prediction for <strong>{{ prediction.extracted_company_name or (prediction.company_profile.extracted_company_name if prediction.company_profile else prediction.user.company_name) }}</strong></p>
+                {% else %}
+                    <p class="lead">Your company's credit score and risk category prediction</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h4><i class="fas fa-tachometer-alt"></i> Credit Score</h4>
+                </div>
+                <div class="card-body text-center">
+                    <div class="speedometer-container">
+                        <div class="speedometer">
+                            <div class="speedometer-face">
+                                <div class="speedometer-needle" id="needle"></div>
+                                <div class="speedometer-center"></div>
+                            </div>
+                            <div class="speedometer-labels">
+                                <div class="speedometer-label label-300">300</div>
+                                <div class="speedometer-label label-500">500</div>
+                                <div class="speedometer-label label-700">700</div>
+                                <div class="speedometer-label label-900">900</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="score-display score-glow" id="score-value">{{ prediction.credit_score }}</div>
+                    <p class="text-muted">Prediction Date: {{ prediction.prediction_date.strftime('%Y-%m-%d %H:%M') }}</p>
+                    {% if is_admin %}
+                        <p class="text-muted">Company: {{ prediction.extracted_company_name or (prediction.company_profile.extracted_company_name if prediction.company_profile else prediction.user.company_name) }}</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h4><i class="fas fa-exclamation-triangle"></i> Risk Category</h4>
+                </div>
+                <div class="card-body text-center">
+                    <div class="risk-category {% if prediction.risk_category == 'High Risk' %}high-risk{% elif prediction.risk_category == 'Medium Risk' %}medium-risk{% else %}low-risk{% endif %}">
+                        <h2>{{ prediction.risk_category }}</h2>
+                    </div>
+                    <div class="mt-4">
+                        <button class="btn btn-download btn-lg" onclick="downloadReport()">
+                            <i class="fas fa-download"></i> Download Full Report
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="row mt-4">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-header">
+                    <h4><i class="fas fa-info-circle"></i> Explanation & Recommendations</h4>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-4">
+                            <div class="explanation-card">
+                                <h5><i class="fas fa-question-circle"></i> Why This Risk Category?</h5>
+                                <p>{{ risk_explanation }}</p>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="explanation-card">
+                                <h5><i class="fas fa-chart-line"></i> Why This Credit Score?</h5>
+                                <p>{{ score_explanation }}</p>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="explanation-card">
+                                <h5><i class="fas fa-lightbulb"></i> How to Improve</h5>
+                                <p>{{ recommendations }}</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="shap-card">
+                        <h4><i class="fas fa-brain"></i> Model Explainability (SHAP)</h4>
+
+                        {% if shap_image %}
+                            <h5 style="margin-top: 15px;">Feature Contribution - Waterfall Plot</h5>
+                            <img class="shap-image" src="{{ url_for('static', filename=shap_image) }}" alt="SHAP Waterfall">
+                        {% endif %}
+
+                        {% if shap_html %}
+                            <h5 style="margin-top: 25px;color: var(--neon-cyan);margin-bottom: 10px;">Interactive Explanation - Force Plot</h5>
+                            <iframe class="shap-iframe" src="{{ url_for('static', filename=shap_html) }}"></iframe>
+                        {% endif %}
+
+                        {% if not shap_image and not shap_html %}
+                            <p style="color: var(--text-secondary); margin-top: 10px;">
+                                SHAP explanation is not available for this prediction.
+                            </p>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row mt-4">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-header">
+                    <h4><i class="fas fa-database"></i> Input Data</h4>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-3">
+                            <div class="feature-card">
+                                <div class="feature-label">Monthly Inflow</div>
+                                <div class="feature-value">₹{{ "{:,.2f}".format(input_features.Monthly_Inflow) }}</div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="feature-card">
+                                <div class="feature-label">Monthly Outflow</div>
+                                <div class="feature-value">₹{{ "{:,.2f}".format(input_features.Monthly_Outflow) }}</div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="feature-card">
+                                <div class="feature-label">GST Compliance Score</div>
+                                <div class="feature-value">{{ input_features.Gst_compliance_score }}</div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="feature-card">
+                                <div class="feature-label">E-commerce Sales</div>
+                                <div class="feature-value">₹{{ "{:,.2f}".format(input_features.Ecommerce_sales) }}</div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="feature-card">
+                                <div class="feature-label">Supplier Payments</div>
+                                <div class="feature-value">₹{{ "{:,.2f}".format(input_features.Supplier_payments) }}</div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="feature-card">
+                                <div class="feature-label">Invoices Issued</div>
+                                <div class="feature-value">{{ input_features.Invoice_issued }}</div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="feature-card">
+                                <div class="feature-label">Invoice Amount</div>
+                                <div class="feature-value">₹{{ "{:,.2f}".format(input_features.Invoice_amount) }}</div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="feature-card">
+                                <div class="feature-label">Employee Count</div>
+                                <div class="feature-value">{{ input_features.Employee_count }}</div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="feature-card">
+                                <div class="feature-label">Asset Value</div>
+                                <div class="feature-value">₹{{ "{:,.2f}".format(input_features.Asset_value) }}</div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="feature-card">
+                                <div class="feature-label">Business Age</div>
+                                <div class="feature-value">{{ input_features.Business_age }} years</div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="feature-card">
+                                <div class="feature-label">Business Size</div>
+                                <div class="feature-value">{{ input_features.Business_size|capitalize }}</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+    <div class="row mt-4">
+        <div class="col-md-12 text-center">
+            {% if is_admin %}
+                <a href="{{ url_for('admin_predictions', user_id=prediction.user_id) }}" class="btn btn-primary btn-lg">
+                    <i class="fas fa-arrow-left"></i> Back to Predictions
+                </a>
+            {% else %}
+                <a href="{{ url_for('predict') }}" class="btn btn-primary btn-lg">
+                    <i class="fas fa-redo"></i> Make Another Prediction
+                </a>
+                <a href="{{ url_for('history') }}" class="btn btn-success btn-lg">
+                    <i class="fas fa-history"></i> View Prediction History
+                </a>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Hidden data for download -->
+<div id="predictionData" style="display: none;" 
+     data-score="{{ prediction.credit_score }}"
+     data-risk="{{ prediction.risk_category }}"
+     data-date="{{ prediction.prediction_date.strftime('%Y-%m-%d %H:%M') }}"
+     data-company="{{ prediction.extracted_company_name or (prediction.company_profile.extracted_company_name if prediction.company_profile else prediction.user.company_name) }}"
+     data-explanation="{{ risk_explanation|e }}"
+     data-score-explanation="{{ score_explanation|e }}"
+     data-recommendations="{{ recommendations|e }}"
+     data-monthly-inflow="{{ input_features.Monthly_Inflow }}"
+     data-monthly-outflow="{{ input_features.Monthly_Outflow }}"
+     data-gst-score="{{ input_features.Gst_compliance_score }}"
+     data-ecommerce-sales="{{ input_features.Ecommerce_sales }}"
+     data-supplier-payments="{{ input_features.Supplier_payments }}"
+     data-invoice-issued="{{ input_features.Invoice_issued }}"
+     data-invoice-amount="{{ input_features.Invoice_amount }}"
+     data-employee-count="{{ input_features.Employee_count }}"
+     data-asset-value="{{ input_features.Asset_value }}"
+     data-business-age="{{ input_features.Business_age }}"
+     data-business-size="{{ input_features.Business_size }}">
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/speedometer.js') }}"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Animate speedometer
+        animateSpeedometer({{ prediction.credit_score }});  // prediction.credit_score is the credit score of the prediction
+        
+        // Create chart
+        const ctx = document.getElementById('scoreChart').getContext('2d');
+        const score = {{ prediction.credit_score }};  // prediction.credit_score is the credit score of the prediction
+        const maxScore = 900;
+        const minScore = 300;
+        const percentage = ((score - minScore) / (maxScore - minScore)) * 100;
+        
+        // Determine color based on risk category
+        let chartColor;
+        {% if prediction.risk_category == 'High Risk' %}  // prediction.risk_category is the risk category of the prediction
+            chartColor = 'rgba(255, 0, 110, 0.8)';
+        {% elif prediction.risk_category == 'Medium Risk' %}  // prediction.risk_category is the risk category of the prediction
+            chartColor = 'rgba(255, 193, 7, 0.8)';
+        {% else %}  // prediction.risk_category is the risk category of the prediction  
+            chartColor = 'rgba(0, 255, 136, 0.8)';
+        {% endif %}
+        
+        new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: ['Credit Score'],
+                datasets: [{
+                    label: 'Your Score',
+                    data: [score],
+                    backgroundColor: chartColor,
+                    borderColor: chartColor,
+                    borderWidth: 2,
+                    borderRadius: 10
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        display: false
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                return 'Credit Score: ' + context.parsed.y;
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: false,
+                        min: minScore,
+                        max: maxScore,
+                        ticks: {
+                            color: '#00ffff',
+                            font: {
+                                size: 12,
+                                weight: 'bold'
+                            }
+                        },
+                        grid: {
+                            color: 'rgba(0, 255, 255, 0.1)'
+                        }
+                    },
+                    x: {
+                        ticks: {
+                            color: '#00ffff',
+                            font: {
+                                size: 12,
+                                weight: 'bold'
+                            }
+                        },
+                        grid: {
+                            display: false
+                        }
+                    }
+                }
+            }
+        });
+    });
+    
+    function downloadReport() {
+        const { jsPDF } = window.jspdf;
+        const data = document.getElementById('predictionData');
+        const score = data.getAttribute('data-score');
+        const risk = data.getAttribute('data-risk');
+        const date = data.getAttribute('data-date');
+        const company = data.getAttribute('data-company');
+        const explanation = data.getAttribute('data-explanation');
+        const scoreExplanation = data.getAttribute('data-score-explanation');
+        const recommendations = data.getAttribute('data-recommendations');
+        
+        // Get features from data attributes
+        const features = {
+            Monthly_Inflow: parseFloat(data.getAttribute('data-monthly-inflow')),
+            Monthly_Outflow: parseFloat(data.getAttribute('data-monthly-outflow')),
+            Gst_compliance_score: parseFloat(data.getAttribute('data-gst-score')),
+            Ecommerce_sales: parseFloat(data.getAttribute('data-ecommerce-sales')),
+            Supplier_payments: parseFloat(data.getAttribute('data-supplier-payments')),
+            Invoice_issued: parseInt(data.getAttribute('data-invoice-issued')),
+            Invoice_amount: parseFloat(data.getAttribute('data-invoice-amount')),
+            Employee_count: parseInt(data.getAttribute('data-employee-count')),
+            Asset_value: parseFloat(data.getAttribute('data-asset-value')),
+            Business_age: parseFloat(data.getAttribute('data-business-age')),
+            Business_size: data.getAttribute('data-business-size')
+        };
+        
+        // Helper function to format currency
+        function formatCurrency(value) {
+            return '₹' + parseFloat(value).toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+        }
+        
+        // Helper function to split text into lines that fit the page width
+        function splitTextToLines(doc, text, maxWidth) {
+            const words = text.split(' ');
+            const lines = [];
+            let currentLine = '';
+            
+            words.forEach(word => {
+                const testLine = currentLine + (currentLine ? ' ' : '') + word;
+                const testWidth = doc.getTextWidth(testLine);
+                if (testWidth > maxWidth && currentLine) {
+                    lines.push(currentLine);
+                    currentLine = word;
+                } else {
+                    currentLine = testLine;
+                }
+            });
+            if (currentLine) {
+                lines.push(currentLine);
+            }
+            return lines;
+        }
+        
+        // Create new PDF document
+        const doc = new jsPDF({
+            orientation: 'portrait',
+            unit: 'mm',
+            format: 'a4'
+        });
+        
+        const pageWidth = doc.internal.pageSize.getWidth();
+        const pageHeight = doc.internal.pageSize.getHeight();
+        const margin = 15;
+        const maxWidth = pageWidth - (2 * margin);
+        let yPos = margin;
+        
+        // Header
+        doc.setFontSize(20);
+        doc.setFont(undefined, 'bold');
+        doc.text('LENDWISE', pageWidth / 2, yPos, { align: 'center' });
+        yPos += 8;
+        
+        doc.setFontSize(14);
+        doc.setFont(undefined, 'normal');
+        doc.text('Credit Score Prediction Report', pageWidth / 2, yPos, { align: 'center' });
+        yPos += 10;
+        
+        // Draw line
+        doc.setLineWidth(0.5);
+        doc.line(margin, yPos, pageWidth - margin, yPos);
+        yPos += 10;
+        
+        // Credit Score Section
+        doc.setFontSize(16);
+        doc.setFont(undefined, 'bold');
+        doc.text('Credit Score: ' + score, pageWidth / 2, yPos, { align: 'center' });
+        yPos += 8;
+        
+        doc.setFontSize(14);
+        doc.text('Risk Category: ' + risk, pageWidth / 2, yPos, { align: 'center' });
+        yPos += 6;
+        
+        doc.setFontSize(10);
+        doc.setFont(undefined, 'normal');
+        doc.text('Prediction Date: ' + date, pageWidth / 2, yPos, { align: 'center' });
+        yPos += 5;
+        doc.text('Company Name: ' + company, pageWidth / 2, yPos, { align: 'center' });
+        yPos += 10;
+        
+        // Draw box around score section
+        doc.setLineWidth(0.5);
+        doc.rect(margin, yPos - 20, pageWidth - (2 * margin), 20);
+        yPos += 5;
+        
+        // Why This Risk Category?
+        doc.setFontSize(12);
+        doc.setFont(undefined, 'bold');
+        doc.text('Why This Risk Category?', margin, yPos);
+        yPos += 6;
+        doc.setLineWidth(0.3);
+        doc.line(margin, yPos - 2, pageWidth - margin, yPos - 2);
+        yPos += 3;
+        
+        doc.setFontSize(10);
+        doc.setFont(undefined, 'normal');
+        const explanationLines = splitTextToLines(doc, explanation, maxWidth);
+        explanationLines.forEach(line => {
+            if (yPos > pageHeight - 20) {
+                doc.addPage();
+                yPos = margin;
+            }
+            doc.text(line, margin, yPos);
+            yPos += 5;
+        });
+        yPos += 5;
+        
+        // Why This Credit Score?
+        doc.setFontSize(12);
+        doc.setFont(undefined, 'bold');
+        doc.text('Why This Credit Score?', margin, yPos);
+        yPos += 6;
+        doc.setLineWidth(0.3);
+        doc.line(margin, yPos - 2, pageWidth - margin, yPos - 2);
+        yPos += 3;
+        
+        doc.setFontSize(10);
+        doc.setFont(undefined, 'normal');
+        const scoreExplanationLines = splitTextToLines(doc, scoreExplanation, maxWidth);
+        scoreExplanationLines.forEach(line => {
+            if (yPos > pageHeight - 20) {
+                doc.addPage();
+                yPos = margin;
+            }
+            doc.text(line, margin, yPos);
+            yPos += 5;
+        });
+        yPos += 5;
+        
+        // How to Improve
+        doc.setFontSize(12);
+        doc.setFont(undefined, 'bold');
+        doc.text('How to Improve', margin, yPos);
+        yPos += 6;
+        doc.setLineWidth(0.3);
+        doc.line(margin, yPos - 2, pageWidth - margin, yPos - 2);
+        yPos += 3;
+        
+        doc.setFontSize(10);
+        doc.setFont(undefined, 'normal');
+        const recommendationsLines = splitTextToLines(doc, recommendations, maxWidth);
+        recommendationsLines.forEach(line => {
+            if (yPos > pageHeight - 20) {
+                doc.addPage();
+                yPos = margin;
+            }
+            doc.text(line, margin, yPos);
+            yPos += 5;
+        });
+        yPos += 5;
+        
+        // Input Data
+        doc.setFontSize(12);
+        doc.setFont(undefined, 'bold');
+        doc.text('Input Data', margin, yPos);
+        yPos += 6;
+        doc.setLineWidth(0.3);
+        doc.line(margin, yPos - 2, pageWidth - margin, yPos - 2);
+        yPos += 3;
+        
+        // Create table for input data
+        const tableData = [
+            ['Monthly Inflow', formatCurrency(features.Monthly_Inflow)],
+            ['Monthly Outflow', formatCurrency(features.Monthly_Outflow)],
+            ['GST Compliance Score', features.Gst_compliance_score.toString()],
+            ['E-commerce Sales', formatCurrency(features.Ecommerce_sales)],
+            ['Supplier Payments', formatCurrency(features.Supplier_payments)],
+            ['Invoices Issued', features.Invoice_issued.toString()],
+            ['Invoice Amount', formatCurrency(features.Invoice_amount)],
+            ['Employee Count', features.Employee_count.toString()],
+            ['Asset Value', formatCurrency(features.Asset_value)],
+            ['Business Age', features.Business_age + ' years'],
+            ['Business Size', features.Business_size.charAt(0).toUpperCase() + features.Business_size.slice(1)]
+        ];
+        
+        doc.setFontSize(10);
+        tableData.forEach(row => {
+            if (yPos > pageHeight - 15) {
+                doc.addPage();
+                yPos = margin;
+            }
+            doc.setFont(undefined, 'bold');
+            doc.text(row[0] + ':', margin, yPos);
+            doc.setFont(undefined, 'normal');
+            doc.text(row[1], margin + 70, yPos);
+            yPos += 6;
+        });
+        
+        // Footer
+        yPos = pageHeight - 10;
+        doc.setFontSize(8);
+        doc.text('© 2025 Lendwise - Credit Score Predictor. All rights reserved.', pageWidth / 2, yPos, { align: 'center' });
+        yPos += 4;
+        doc.text('Report generated on ' + new Date().toLocaleString(), pageWidth / 2, yPos, { align: 'center' });
+        
+        // Save PDF
+        const filename = `Lendwise_Credit_Score_Report_${company}_${date.replace(/[:\s]/g, '_')}.pdf`;
+        doc.save(filename);
+    }
+</script>
+{% endblock %}

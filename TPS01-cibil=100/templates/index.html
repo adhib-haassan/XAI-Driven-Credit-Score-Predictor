@@ -1,0 +1,74 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-12">
+        <div class="jumbotron">
+            {% if session.get('admin_logged_in') %}
+                <h1 class="display-4">Admin Dashboard</h1>
+                <p class="lead">Manage companies and view system analytics.</p>
+                <hr class="my-4" style="border-color: rgba(0, 255, 255, 0.3);">
+                <p>Get started by viewing all companies or system analytics.</p>
+                <a class="btn btn-primary btn-lg" href="{{ url_for('admin_companies') }}" role="button">
+                    <i class="fas fa-building"></i> View Companies
+                </a>
+                <a class="btn btn-success btn-lg" href="{{ url_for('admin_dashboard') }}" role="button">
+                    <i class="fas fa-chart-bar"></i> View Analytics
+                </a>
+            {% elif current_user.is_authenticated %}
+                <h1 class="display-4">Welcome to <span style="color: var(--neon-cyan);">Lendwise</span></h1>
+                <p class="lead">Predict your company's credit score and risk category with our advanced machine learning models.</p>
+                <hr class="my-4" style="border-color: rgba(0, 255, 255, 0.3);">
+                <p>Get started by predicting your credit score or viewing your analytics.</p>
+                <a class="btn btn-primary btn-lg" href="{{ url_for('predict') }}" role="button">
+                    <i class="fas fa-rocket"></i> Predict Credit Score
+                </a>
+                <a class="btn btn-success btn-lg" href="{{ url_for('analytics') }}" role="button">
+                    <i class="fas fa-chart-line"></i> View Analytics
+                </a>
+            {% else %}
+                <h1 class="display-4">Welcome to <span style="color: var(--neon-cyan);">Lendwise</span></h1>
+                <p class="lead">Predict your company's credit score and risk category with our advanced machine learning models.</p>
+                <hr class="my-4" style="border-color: rgba(0, 255, 255, 0.3);">
+                <p>Please login or register to get started.</p>
+                <a class="btn btn-primary btn-lg" href="{{ url_for('login') }}" role="button">
+                    <i class="fas fa-sign-in-alt"></i> Login
+                </a>
+                <a class="btn btn-success btn-lg" href="{{ url_for('register') }}" role="button">
+                    <i class="fas fa-user-plus"></i> Register
+                </a>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<div class="row mt-5">
+    <div class="col-md-4">
+        <div class="card h-100">
+            <div class="card-body text-center">
+                <i class="fas fa-chart-line" style="font-size: 3rem; color: var(--neon-cyan); margin-bottom: 20px;"></i>
+                <h5 class="card-title" style="color: var(--neon-cyan); font-family: 'Orbitron', sans-serif;">Credit Score Prediction</h5>
+                <p class="card-text" style="color:white;">Our advanced machine learning models analyze your company's financial data to predict an accurate credit score.</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card h-100">
+            <div class="card-body text-center">
+                <i class="fas fa-exclamation-triangle" style="font-size: 3rem; color: var(--neon-pink); margin-bottom: 20px;"></i>
+                <h5 class="card-title" style="color: var(--neon-pink); font-family: 'Orbitron', sans-serif;">Risk Assessment</h5>
+                <p class="card-text" style="color:white;">Based on your credit score, we categorize your company into low, medium, or high risk categories.</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card h-100">
+            <div class="card-body text-center">
+                <i class="fas fa-lightbulb" style="font-size: 3rem; color: var(--neon-green); margin-bottom: 20px;"></i>
+                <h5 class="card-title" style="color: var(--neon-green); font-family: 'Orbitron', sans-serif;">Improvement Suggestions</h5>
+                <p class="card-text" style="color:white;">Get personalized recommendations to improve your credit score and reduce risk category.</p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

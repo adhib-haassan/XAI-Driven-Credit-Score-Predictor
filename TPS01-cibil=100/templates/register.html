@@ -1,0 +1,84 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="jumbotron text-center mb-4">
+            <h1 class="display-4">Join Lendwise</h1>
+            <p class="lead">Register your company to get started</p>
+        </div>
+        <div class="card">
+            <div class="card-header">
+                <h3><i class="fas fa-user-plus"></i> Register Your Company</h3>
+            </div>
+            <div class="card-body">
+                <form method="POST" action="{{ url_for('register') }}">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="company_name" class="form-label">
+                                    <i class="fas fa-building"></i> Company Name
+                                </label>
+                                <input type="text" class="form-control" id="company_name" name="company_name" required>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="email" class="form-label">
+                                    <i class="fas fa-envelope"></i> Email
+                                </label>
+                                <input type="email" class="form-control" id="email" name="email" required>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="company_type" class="form-label">
+                                    <i class="fas fa-briefcase"></i> Company Type
+                                </label>
+                                <select class="form-select" id="company_type" name="company_type" required>
+                                    <option value="">Select Company Type</option>
+                                    <option value="individual">Individual</option>
+                                    <option value="partnership">Partnership</option>
+                                    <option value="corporation">Corporation</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="country" class="form-label">
+                                    <i class="fas fa-globe"></i> Country
+                                </label>
+                                <input type="text" class="form-control" id="country" name="country" required>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="password" class="form-label">
+                            <i class="fas fa-lock"></i> Password
+                        </label>
+                        <input type="password" class="form-control" id="password" name="password" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="confirm_password" class="form-label">
+                            <i class="fas fa-lock"></i> Confirm Password
+                        </label>
+                        <input type="password" class="form-control" id="confirm_password" name="confirm_password" required>
+                    </div>
+                    <div class="text-center">
+                        <button type="submit" class="btn btn-primary btn-lg">
+                            <i class="fas fa-user-plus"></i> Register
+                        </button>
+                    </div>
+                    <div class="text-center mt-3">
+                        <a href="{{ url_for('login') }}" class="btn btn-link" style="color: var(--neon-cyan);">
+                            Already have an account? Login
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

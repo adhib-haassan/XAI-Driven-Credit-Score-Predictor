@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-12">
+        <h2 class="text-white">Registered Companies</h2>
+        <p class="text-white">View all registered companies in the system.</p>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-12">
+        <div class="card bg-dark text-white">
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-dark table-striped">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Company Name</th>
+                                <th>Email</th>
+                                <th>Company Type</th>
+                                <th>Country</th>
+                                <th>Registration Date</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for company in companies %}
+                                <tr>
+                                    <td>{{ company.id }}</td>
+                                    <td>{{ company.company_name }}</td>
+                                    <td>{{ company.email }}</td>
+                                    <td>{{ company.company_type }}</td>
+                                    <td>{{ company.country }}</td>
+                                    <td>{{ company.created_at.strftime('%Y-%m-%d') }}</td>
+                                    <td>
+                                        <a href="{{ url_for('admin_predictions', user_id=company.id) }}" class="btn btn-sm btn-info">View Predictions</a>
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mt-4">
+    <div class="col-md-12 text-center">
+        <a href="{{ url_for('admin_dashboard') }}" class="btn btn-primary">Back to Dashboard</a>
+    </div>
+</div>
+{% endblock %}
